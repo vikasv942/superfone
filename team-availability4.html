@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Team Availability</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f5f5f3;--bg3:#efefec;
+  --text:#1a1a18;--text2:#6b6b67;
+  --border:rgba(0,0,0,.12);--border2:rgba(0,0,0,.22);
+  --green:#1D9E75;--gd:#0F6E56;--red:#E24B4A;
+  --blue:#3B82F6;--orange:#F59E0B;--purple:#7c3aed;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#1c1c1a;--bg2:#252523;--bg3:#2e2e2b;--text:#f0efea;--text2:#9a9a94;--border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.2)}
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh}
+
+/* ── LOGIN ── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem}
+.lcard{background:var(--bg);border:.5px solid var(--border);border-radius:var(--rl);padding:2rem;width:100%;max-width:380px}
+.llogo{font-size:28px;margin-bottom:6px}
+.ltitle{font-size:20px;font-weight:600;margin-bottom:4px}
+.lsub{font-size:13px;color:var(--text2);margin-bottom:1.5rem}
+.lfield{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.lfield label{font-size:12px;font-weight:500;color:var(--text2)}
+.lfield input{height:40px;padding:0 12px;border:.5px solid var(--border2);border-radius:var(--r);background:var(--bg2);color:var(--text);font-size:14px;outline:none}
+.lfield input:focus{border-color:var(--green)}
+.lerr{font-size:13px;color:var(--red);margin-bottom:10px;min-height:18px}
+.lbtn{width:100%;height:42px;background:var(--green);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:500;cursor:pointer;transition:background .15s}
+.lbtn:hover{background:var(--gd)}
+.lbtn:disabled{opacity:.5;cursor:not-allowed}
+.lhint{font-size:12px;color:var(--text2);text-align:center;margin-top:14px;line-height:1.7}
+
+/* ── MAIN ── */
+#main-screen{display:none;padding:1.5rem 1rem}
+.app{max-width:700px;margin:0 auto}
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:8px}
+.hdr-l .title{font-size:20px;font-weight:500}
+.hdr-l .sub{font-size:13px;color:var(--text2);margin-top:3px}
+.hdr-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sync-badge{font-size:12px;padding:4px 10px;border-radius:20px;border:.5px solid var(--border);background:var(--bg);color:var(--text2);display:flex;align-items:center;gap:5px;white-space:nowrap}
+.sdot{width:7px;height:7px;border-radius:50%;background:#aaa;flex-shrink:0;transition:background .3s}
+.sdot.live{background:var(--green)}
+.ubadge{font-size:12px;padding:4px 10px;border-radius:20px;background:var(--bg);border:.5px solid var(--border);color:var(--text2);display:flex;align-items:center;gap:6px}
+.uavatar{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0}
+.signout{background:none;border:.5px solid var(--border2);border-radius:var(--r);padding:4px 10px;font-size:12px;color:var(--text2);cursor:pointer}
+.signout:hover{color:var(--red);border-color:var(--red)}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;background:var(--bg2);border-radius:var(--r);padding:4px;margin-bottom:1.5rem}
+.tab{flex:1;height:34px;border:none;border-radius:6px;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+.tab.active{background:var(--bg);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.admin-only{display:none!important}
+body.is-admin .admin-only{display:flex!important}
+body.is-admin .tab.admin-only{display:block!important}
+
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.5rem}
+.scard{background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:12px}
+.slabel{font-size:12px;color:var(--text2);margin-bottom:4px}
+.sval{font-size:22px;font-weight:500}
+.sec{font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+
+/* ── MEMBER LIST ── */
+.mlist{display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem}
+.mrow{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:10px 14px;transition:opacity .2s}
+.mrow.mine{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset}
+.mrow.saving{opacity:.5;pointer-events:none}
+.mleft{display:flex;align-items:center;gap:10px}
+.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
+.mname{font-size:15px}
+.youtag{font-size:11px;padding:1px 6px;border-radius:8px;background:var(--green);color:#fff;font-weight:500;margin-left:6px;vertical-align:middle}
+.mright{display:flex;align-items:center;gap:10px}
+.slbl{font-size:12px;font-weight:500;min-width:42px;text-align:right}
+.toggle{position:relative;width:42px;height:24px;cursor:pointer;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.slider{position:absolute;inset:0;background:var(--border2);border-radius:12px;transition:background .2s}
+.slider::before{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s}
+.toggle input:checked+.slider{background:var(--green)}
+.toggle input:checked+.slider::before{transform:translateX(18px)}
+.toggle.locked{opacity:.35;cursor:not-allowed;pointer-events:none}
+
+/* ── BUTTONS / MISC ── */
+.btn{height:38px;padding:0 16px;border:.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:background .15s}
+.btn:hover{background:var(--bg2)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--green);color:#fff;border-color:var(--green)}
+.btn.primary:hover{background:var(--gd)}
+.delbtn{background:none;border:none;cursor:pointer;color:var(--text2);padding:4px;border-radius:4px;font-size:15px;opacity:.5;transition:opacity .15s,color .15s}
+.delbtn:hover{opacity:1;color:var(--red)}
+hr.div{border:none;border-top:.5px solid var(--border);margin-bottom:1.5rem}
+.empty{color:var(--text2);font-size:14px;text-align:center;padding:2.5rem 1rem}
+.infobox{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--text2);margin-bottom:1.2rem;line-height:1.6}
+.infobox strong{color:var(--text)}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--green);color:#fff;padding:9px 18px;border-radius:var(--r);font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;box-shadow:0 2px 12px rgba(0,0,0,.15)}
+.toast.err{background:var(--red)}
+.toast.show{opacity:1}
+.sk{background:var(--bg3);border-radius:var(--r);height:52px;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+
+/* ── EXPORT ── */
+.expanel{background:var(--bg2);border-radius:var(--rl);padding:1rem 1.25rem;margin-bottom:1.5rem}
+.exrow{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:10px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;color:var(--text2)}
+.field input[type=date]{height:38px;padding:0 10px;font-size:13px;border:.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none}
+
+/* ── LOGS ── */
+#logs-tab{display:none}
+.lfilters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;align-items:center}
+.lfilters select,.lfilters input[type=date]{height:36px;padding:0 10px;font-size:13px;border:.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none}
+.llist{display:flex;flex-direction:column;gap:6px}
+.lentry{background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:10px 14px;display:flex;align-items:flex-start;gap:10px}
+.licon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px}
+.licon.online{background:#d1fae5}.licon.offline{background:#fee2e2}
+.licon.added{background:#dbeafe}.licon.removed{background:#fef3c7}
+.licon.login{background:#ede9fe}.licon.logout{background:var(--bg2)}
+.lbody{flex:1;min-width:0}
+.lmain{font-size:14px;color:var(--text);line-height:1.4}
+.lmain strong{font-weight:500}
+.lmeta{font-size:12px;color:var(--text2);margin-top:2px}
+.lbadge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;font-weight:500;margin-left:6px;vertical-align:middle}
+.lbadge.online{background:#d1fae5;color:var(--green)}.lbadge.offline{background:#fee2e2;color:var(--red)}
+.lbadge.added{background:#dbeafe;color:var(--blue)}.lbadge.removed{background:#fef3c7;color:var(--orange)}
+.lbadge.login{background:#ede9fe;color:var(--purple)}.lbadge.logout{background:var(--bg2);color:var(--text2)}
+.lempty{color:var(--text2);font-size:14px;text-align:center;padding:3rem 1rem}
+
+/* ── ADMIN ── */
+#admin-tab{display:none}
+.abox{background:var(--bg2);border-radius:var(--rl);padding:1rem 1.25rem;margin-bottom:1.5rem}
+.urow{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:6px}
+.urow-l{display:flex;align-items:center;gap:10px}
+.uav{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
+.uinfo{display:flex;flex-direction:column;gap:2px}
+.uname{font-size:14px;font-weight:500}
+.usub{font-size:12px;color:var(--text2)}
+.rbadge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.rbadge.admin{background:#fef3c7;color:#92400e}
+.rbadge.member{background:#f0fdf4;color:#166534}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.finput{height:38px;padding:0 12px;border:.5px solid var(--border2);border-radius:var(--r);background:var(--bg2);color:var(--text);font-size:14px;outline:none;width:100%}
+.finput:focus{border-color:var(--green)}
+.fselect{height:38px;padding:0 10px;font-size:13px;border:.5px solid var(--border2);border-radius:var(--r);background:var(--bg2);color:var(--text);outline:none;width:100%}
+
+/* ── FIREBASE SETUP ── */
+.setup-box{background:var(--bg);border:.5px solid var(--border);border-radius:var(--rl);padding:1.5rem;margin-bottom:1.5rem}
+.setup-box h2{font-size:15px;font-weight:500;margin-bottom:8px}
+.setup-box p{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px}
+.setup-box a{color:var(--green);text-decoration:none}
+.srow{display:flex;gap:8px;margin-top:8px}
+.srow input{flex:1;height:38px;font-size:12px;padding:0 10px;border:.5px solid var(--border2);border-radius:var(--r);background:var(--bg2);color:var(--text);outline:none;font-family:monospace}
+.srow input:focus{border-color:var(--green)}
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="login-screen">
+  <div class="lcard">
+    <div class="llogo">📋</div>
+    <div class="ltitle">Team Availability</div>
+    <div class="lsub">Sign in to your workspace</div>
+
+    <div id="fb-setup-box" style="display:none;background:var(--bg2);border-radius:var(--r);padding:1rem;margin-bottom:1rem;font-size:13px;color:var(--text2);line-height:1.6">
+      <strong style="color:var(--text)">⚡ First-time setup</strong><br>
+      Paste your Firebase Realtime Database URL, then sign in.<br>
+      <a href="https://console.firebase.google.com" target="_blank" style="color:var(--green)">Get it free → console.firebase.google.com</a>
+      <div class="srow" style="margin-top:8px">
+        <input id="fb-url-login" type="text" placeholder="https://xxx-default-rtdb.firebaseio.com"/>
+        <button class="btn primary" style="height:36px;font-size:13px" onclick="saveFbUrl('fb-url-login')">Save</button>
+      </div>
+    </div>
+
+    <div class="lfield"><label>Username</label><input type="text" id="l-user" placeholder="Enter your username" autocomplete="username"/></div>
+    <div class="lfield"><label>Password</label><input type="password" id="l-pass" placeholder="Enter your password" autocomplete="current-password"/></div>
+    <div class="lerr" id="l-err"></div>
+    <button class="lbtn" id="l-btn" onclick="doLogin()">Sign in</button>
+    <div class="lhint">Default admin: <strong>admin</strong> / <strong>admin123</strong><br>Ask your admin to create your account.</div>
+  </div>
+</div>
+
+<!-- ══════════ MAIN ══════════ -->
+<div id="main-screen">
+<div class="app">
+
+  <div class="hdr">
+    <div class="hdr-l">
+      <div class="title">Team availability</div>
+      <div class="sub" id="today-lbl"></div>
+    </div>
+    <div class="hdr-r">
+      <div class="sync-badge"><span class="sdot" id="sdot"></span><span id="slbl">Connecting…</span></div>
+      <div class="ubadge">
+        <div class="uavatar" id="u-av"></div>
+        <span id="u-name"></span>
+        <span id="u-role" class="rbadge" style="margin-left:2px"></span>
+      </div>
+      <button class="signout" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <!-- Firebase setup inside app (if URL missing) -->
+  <div class="setup-box" id="fb-setup-app" style="display:none">
+    <h2>⚡ Connect Firebase (one-time)</h2>
+    <p>Paste your Firebase Realtime Database URL to enable sync across devices.<br>
+      <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → Build → Realtime Database → Create database → Test mode</p>
+    <div class="srow">
+      <input id="fb-url-app" type="text" placeholder="https://your-project-default-rtdb.firebaseio.com"/>
+      <button class="btn primary" onclick="saveFbUrl('fb-url-app')">Connect</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" id="tab-team" onclick="switchTab('team')">👥 Team</button>
+    <button class="tab" id="tab-logs" onclick="switchTab('logs')">📋 Activity Log</button>
+    <button class="tab admin-only" id="tab-admin" onclick="switchTab('admin')">⚙️ Admin</button>
+  </div>
+
+  <!-- ── TEAM TAB ── -->
+  <div id="team-tab">
+    <div id="my-infobox" class="infobox" style="display:none"></div>
+    <div class="stats">
+      <div class="scard"><div class="slabel">Total</div><div class="sval" id="s-total">—</div></div>
+      <div class="scard"><div class="slabel">Online now</div><div class="sval" id="s-online" style="color:var(--green)">—</div></div>
+      <div class="scard"><div class="slabel">Offline now</div><div class="sval" id="s-offline" style="color:var(--red)">—</div></div>
+    </div>
+    <div class="sec">Team members</div>
+    <div class="mlist" id="mlist"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
+    <hr class="div"/>
+    <div class="expanel">
+      <div class="sec">Export history as CSV</div>
+      <div class="exrow">
+        <div class="field"><label>From</label><input type="date" id="ex-from"/></div>
+        <div class="field"><label>To</label><input type="date" id="ex-to"/></div>
+        <button class="btn" onclick="exportCSV()">⬇ Download CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LOGS TAB ── -->
+  <div id="logs-tab">
+    <div class="lfilters">
+      <select id="lf-action">
+        <option value="">All actions</option>
+        <option value="online">Went online</option>
+        <option value="offline">Went offline</option>
+        <option value="added">User added</option>
+        <option value="removed">User removed</option>
+        <option value="login">Login</option>
+        <option value="logout">Logout</option>
+      </select>
+      <select id="lf-user"><option value="">All users</option></select>
+      <input type="date" id="lf-date"/>
+      <button class="btn" onclick="renderLogs()">Filter</button>
+      <button class="btn" onclick="clearLogFilters()">Clear</button>
+    </div>
+    <div class="llist" id="llist"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
+    <button class="btn" id="load-more" onclick="loadMoreLogs()" style="width:100%;margin-top:10px;display:none">Load more</button>
+  </div>
+
+  <!-- ── ADMIN TAB ── -->
+  <div id="admin-tab">
+    <div class="abox">
+      <div class="sec" style="margin-bottom:4px">Team accounts</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+        Creating a <strong>member account</strong> automatically adds them to the team list.<br>
+        Deleting an account also removes them from the team.<br>
+        <strong>Admin accounts</strong> manage the app and don't appear in the team list.
+      </p>
+      <div id="user-list"></div>
+
+      <!-- Add account form -->
+      <div style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-top:10px">
+        <div class="sec" style="margin-bottom:10px">Create new account</div>
+        <div class="form-grid">
+          <div class="field"><label style="font-size:12px;color:var(--text2);margin-bottom:4px">Full name (display name)</label>
+            <input class="finput" type="text" id="nu-display" placeholder="e.g. Priya Sharma" maxlength="40"/></div>
+          <div class="field"><label style="font-size:12px;color:var(--text2);margin-bottom:4px">Username (for login)</label>
+            <input class="finput" type="text" id="nu-name" placeholder="e.g. priya" maxlength="30"/></div>
+          <div class="field"><label style="font-size:12px;color:var(--text2);margin-bottom:4px">Password</label>
+            <input class="finput" type="password" id="nu-pass" placeholder="Set a password" maxlength="50"/></div>
+          <div class="field"><label style="font-size:12px;color:var(--text2);margin-bottom:4px">Role</label>
+            <select class="fselect" id="nu-role" onchange="onRoleChange()">
+              <option value="member">Member</option>
+              <option value="admin">Admin</option>
+            </select></div>
+        </div>
+        <p id="role-hint" style="font-size:12px;color:var(--text2);margin-bottom:10px">
+          👤 Member account — will appear in the team list and can toggle their own status.
+        </p>
+        <button class="btn primary" onclick="addUser()">+ Create account</button>
+      </div>
+    </div>
+
+    <div class="abox">
+      <div class="sec" style="margin-bottom:8px">Firebase</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:8px;word-break:break-all" id="fb-url-display"></div>
+      <button class="btn" onclick="resetFbUrl()">Change URL</button>
+    </div>
+  </div>
+
+</div><!-- .app -->
+</div><!-- #main-screen -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── constants ── */
+const COLORS     =['#B5D4F4','#9FE1CB','#FAC775','#F4C0D1','#CECBF6','#C0DD97','#F5C4B3'];
+const TCOLORS    =['#0C447C','#085041','#633806','#72243E','#3C3489','#27500A','#712B13'];
+const LOG_ICONS  ={online:'🟢',offline:'🔴',added:'➕',removed:'⚠️',login:'🔑',logout:'🚪'};
+const PAGE_SIZE  =30;
+
+const esc   =s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const inits =n=>n.split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2);
+const pad   =n=>String(n).padStart(2,'0');
+const fmtTs =ts=>{const d=new Date(ts);return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`};
+const cidx  =n=>{let h=0;for(let c of n)h=(h*31+c.charCodeAt(0))&0xffff;return h%COLORS.length};
+
+let DB='', members=[], pollingTimer=null, lastHash='';
+let me=null;          // current user session
+let allLogs=[], logPage=0;
+
+/* ── toast / sync ── */
+function toast(msg,err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast'+(err?' err':'')+' show';
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);
+}
+function syncStatus(live){
+  document.getElementById('sdot').className='sdot'+(live?' live':'');
+  document.getElementById('slbl').textContent=live?'Live sync ✓':'Reconnecting…';
+}
+
+/* ── Firebase REST ── */
+const fbGet =async p=>{const r=await fetch(DB+p+'.json');if(!r.ok)throw 0;return r.json()};
+const fbSet =async(p,d)=>{const r=await fetch(DB+p+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(!r.ok)throw 0;return r.json()};
+const fbPush=async(p,d)=>{const r=await fetch(DB+p+'.json',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(!r.ok)throw 0};
+const fbDel =async p=>fetch(DB+p+'.json',{method:'DELETE'});
+
+/* ── Firebase URL ── */
+function saveFbUrl(inputId){
+  const v=document.getElementById(inputId).value.trim().replace(/\/$/,'');
+  if(!v.startsWith('https://')||!v.includes('firebaseio.com')){toast('Invalid Firebase URL',true);return}
+  localStorage.setItem('team_fb_url',v);DB=v;
+  document.getElementById('fb-setup-box').style.display='none';
+  document.getElementById('fb-setup-app').style.display='none';
+  document.getElementById('fb-url-display').textContent=v;
+  toast('Firebase connected!');
+}
+function resetFbUrl(){localStorage.removeItem('team_fb_url');DB='';document.getElementById('fb-setup-app').style.display=''}
+
+/* ── Default users ── */
+const DEFAULT_USERS={admin:{password:'admin123',role:'admin',displayName:'Admin',memberId:null,colorIdx:0}};
+async function getUsers(){try{const u=await fbGet('/users');return u||DEFAULT_USERS}catch{return DEFAULT_USERS}}
+async function saveUsers(u){await fbSet('/users',u)}
+
+/* ── AUTH ── */
+async function doLogin(){
+  const username=document.getElementById('l-user').value.trim();
+  const password=document.getElementById('l-pass').value;
+  const errEl=document.getElementById('l-err');
+  const btn=document.getElementById('l-btn');
+  if(!username||!password){errEl.textContent='Enter username and password.';return}
+  if(!DB){errEl.textContent='Save your Firebase URL first.';return}
+  btn.disabled=true;errEl.textContent='Signing in…';
+  try{
+    const users=await getUsers();
+    const u=users[username];
+    if(!u||u.password!==password){errEl.textContent='Incorrect username or password.';btn.disabled=false;return}
+    me={username,role:u.role,memberId:u.memberId||null,displayName:u.displayName||username,colorIdx:u.colorIdx??cidx(username)};
+    localStorage.setItem('team_session',JSON.stringify(me));
+    errEl.textContent='';
+    await fbPush('/logs',{ts:Date.now(),type:'login',actor:username,description:`${username} signed in`,target:username});
+    showApp();
+  }catch(e){errEl.textContent='Connection error — check Firebase URL.'}
+  btn.disabled=false;
+}
+
+async function doLogout(){
+  await fbPush('/logs',{ts:Date.now(),type:'logout',actor:me.username,description:`${me.username} signed out`,target:me.username});
+  me=null;localStorage.removeItem('team_session');
+  clearInterval(pollingTimer);
+  document.getElementById('main-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('l-pass').value='';
+  document.getElementById('l-err').textContent='';
+}
+
+/* ── show app ── */
+function showApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-screen').style.display='block';
+  const ci=me.colorIdx;
+  const av=document.getElementById('u-av');
+  av.style.background=COLORS[ci%COLORS.length];
+  av.style.color=TCOLORS[ci%TCOLORS.length];
+  av.textContent=inits(me.displayName||me.username);
+  document.getElementById('u-name').textContent=me.displayName||me.username;
+  const rb=document.getElementById('u-role');
+  rb.textContent=me.role;rb.className='rbadge '+me.role;
+  if(me.role==='admin')document.body.classList.add('is-admin');
+  else document.body.classList.remove('is-admin');
+  document.getElementById('fb-url-display').textContent=DB;
+  loadAll().then(startPolling);
+  loadLogs();
+  if(me.role==='admin')loadAdminUsers();
+}
+
+/* ── tabs ── */
+function switchTab(t){
+  ['team','logs','admin'].forEach(x=>{
+    document.getElementById(x+'-tab').style.display=x===t?'block':'none';
+    const b=document.getElementById('tab-'+x);if(b)b.classList.toggle('active',x===t);
+  });
+  if(t==='logs')loadLogs();
+  if(t==='admin')loadAdminUsers();
+}
+
+/* ── members ── */
+async function loadAll(){
+  try{
+    const data=await fbGet('/');
+    members=data&&data.members?Object.values(data.members):[];
+    lastHash=JSON.stringify(members);
+    syncStatus(true);
+  }catch{members=[];syncStatus(false)}
+  renderMembers();
+}
+async function saveMembers(){const o={};members.forEach(m=>{o[m.id]=m});await fbSet('/members',o)}
+
+function renderMembers(){
+  const list=document.getElementById('mlist');
+
+  // info banner for members
+  const ib=document.getElementById('my-infobox');
+  if(me.role==='member'){
+    const myM=members.find(m=>m.id===me.memberId);
+    ib.style.display='block';
+    ib.innerHTML=myM
+      ?`Signed in as <strong>${esc(myM.name)}</strong> — only you can toggle your own status.`
+      :`⚠️ Your account isn't linked to a team member. Contact your admin.`;
+  }else{
+    ib.style.display='none';
+  }
+
+  if(!members.length){list.innerHTML='<div class="empty">No team members yet. Admin can add them in the ⚙️ Admin tab.</div>';updateStats();return}
+
+  list.innerHTML=members.map(m=>{
+    const mine=me.role!=='admin'&&m.id===me.memberId;
+    const locked=me.role==='admin'||!mine;
+    return`<div class="mrow${mine?' mine':''}" id="row-${m.id}">
+      <div class="mleft">
+        <div class="av" style="background:${COLORS[m.colorIdx%COLORS.length]};color:${TCOLORS[m.colorIdx%TCOLORS.length]}">${esc(inits(m.name))}</div>
+        <span class="mname">${esc(m.name)}${mine?'<span class="youtag">you</span>':''}</span>
+      </div>
+      <div class="mright">
+        <span class="slbl" id="lbl-${m.id}" style="color:${m.online?'var(--green)':'var(--red)'}">${m.online?'Online':'Offline'}</span>
+        <label class="toggle${locked?' locked':''}" title="${locked?(me.role==='admin'?'Admins view only':'Only you can toggle your own status'):'Toggle your status'}">
+          <input type="checkbox" ${m.online?'checked':''} ${locked?'disabled':''} onchange="toggleMember('${m.id}',this.checked)"/>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>`;
+  }).join('');
+  updateStats();
+}
+
+function updateStats(){
+  const on=members.filter(m=>m.online).length;
+  document.getElementById('s-total').textContent=members.length;
+  document.getElementById('s-online').textContent=on;
+  document.getElementById('s-offline').textContent=members.length-on;
+}
+
+async function toggleMember(id,val){
+  if(me.role!=='admin'&&id!==me.memberId){toast('You can only toggle your own status',true);return}
+  const row=document.getElementById('row-'+id);if(row)row.classList.add('saving');
+  const m=members.find(m=>m.id===id);if(!m)return;
+  m.online=val;
+  document.getElementById('lbl-'+id).textContent=val?'Online':'Offline';
+  document.getElementById('lbl-'+id).style.color=val?'var(--green)':'var(--red)';
+  updateStats();
+  try{
+    await Promise.all([
+      saveMembers(),
+      fbPush('/logs',{ts:Date.now(),type:val?'online':'offline',actor:me.username,description:`${me.displayName||me.username} is now <strong>${val?'Online':'Offline'}</strong>`,target:m.name})
+    ]);
+    syncStatus(true);
+  }catch{syncStatus(false);toast('Sync error',true)}
+  if(row)row.classList.remove('saving');
+}
+
+/* ── Logs ── */
+async function loadLogs(){
+  logPage=0;allLogs=[];
+  document.getElementById('llist').innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
+  try{
+    const raw=await fbGet('/logs');
+    allLogs=raw?Object.values(raw).sort((a,b)=>b.ts-a.ts):[];
+    const users=[...new Set(allLogs.map(l=>l.actor))].sort();
+    const sel=document.getElementById('lf-user');
+    sel.innerHTML='<option value="">All users</option>'+users.map(u=>`<option value="${esc(u)}">${esc(u)}</option>`).join('');
+  }catch{allLogs=[]}
+  renderLogs();
+}
+function getFilteredLogs(){
+  const act=document.getElementById('lf-action').value;
+  const usr=document.getElementById('lf-user').value;
+  const dt =document.getElementById('lf-date').value;
+  return allLogs.filter(l=>{
+    if(act&&l.type!==act)return false;
+    if(usr&&l.actor!==usr)return false;
+    if(dt){const d=new Date(l.ts);const ds=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;if(ds!==dt)return false}
+    return true;
+  });
+}
+function renderLogs(){
+  const filtered=getFilteredLogs();
+  const slice=filtered.slice(0,(logPage+1)*PAGE_SIZE);
+  const list=document.getElementById('llist');
+  if(!slice.length){list.innerHTML='<div class="lempty">No activity found.</div>';document.getElementById('load-more').style.display='none';return}
+  list.innerHTML=slice.map(l=>`
+    <div class="lentry">
+      <div class="licon ${l.type||''}">${LOG_ICONS[l.type]||'•'}</div>
+      <div class="lbody">
+        <div class="lmain">${l.description||esc(l.type||'')} <span class="lbadge ${l.type||''}">${l.type||''}</span></div>
+        <div class="lmeta">${fmtTs(l.ts)}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('load-more').style.display=slice.length<filtered.length?'block':'none';
+}
+function loadMoreLogs(){logPage++;renderLogs()}
+function clearLogFilters(){
+  document.getElementById('lf-action').value='';
+  document.getElementById('lf-user').value='';
+  document.getElementById('lf-date').value='';
+  renderLogs();
+}
+
+/* ── Admin: accounts ── */
+async function loadAdminUsers(){
+  const users=await getUsers();
+  const list=document.getElementById('user-list');
+  list.innerHTML=Object.entries(users).map(([uname,u])=>{
+    const ci=u.colorIdx??cidx(uname);
+    const isMember=u.role==='member';
+    return`<div class="urow">
+      <div class="urow-l">
+        <div class="uav" style="background:${COLORS[ci%COLORS.length]};color:${TCOLORS[ci%TCOLORS.length]}">${esc(inits(u.displayName||uname))}</div>
+        <div class="uinfo">
+          <span class="uname">${esc(u.displayName||uname)} <span style="font-weight:400;color:var(--text2);font-size:12px">@${esc(uname)}</span></span>
+          <span class="usub">${isMember?'Can toggle own status':'Admin — manages the app'}</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="rbadge ${u.role}">${u.role}</span>
+        ${uname!=='admin'?`<button class="delbtn" onclick="deleteUser('${esc(uname)}')">🗑</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function onRoleChange(){
+  const role=document.getElementById('nu-role').value;
+  document.getElementById('role-hint').textContent=role==='member'
+    ?'👤 Member account — will appear in the team list and can toggle their own status.'
+    :'🔧 Admin account — manages users and settings, not shown in team list.';
+}
+
+async function addUser(){
+  const display=document.getElementById('nu-display').value.trim();
+  const uname  =document.getElementById('nu-name').value.trim();
+  const pass   =document.getElementById('nu-pass').value.trim();
+  const role   =document.getElementById('nu-role').value;
+
+  if(!display||!uname||!pass){toast('All fields are required',true);return}
+
+  const users=await getUsers();
+  if(users[uname]){toast('Username already exists',true);return}
+
+  const ci=cidx(uname);
+  let memberId=null;
+
+  // If member role → auto-create team member entry
+  if(role==='member'){
+    memberId='m_'+Date.now();
+    members.push({id:memberId,name:display,online:false,colorIdx:ci});
+    await saveMembers();
+    renderMembers();
+  }
+
+  users[uname]={password:pass,role,displayName:display,memberId,colorIdx:ci};
+  await saveUsers(users);
+  await fbPush('/logs',{ts:Date.now(),type:'added',actor:me.username,
+    description:`${me.username} created ${role} account <strong>${esc(display)}</strong> (@${esc(uname)})`,target:uname});
+
+  document.getElementById('nu-display').value='';
+  document.getElementById('nu-name').value='';
+  document.getElementById('nu-pass').value='';
+  toast(`${role==='member'?'Member':'Admin'} account "${display}" created`);
+  loadAdminUsers();
+}
+
+async function deleteUser(uname){
+  if(uname==='admin'){toast('Cannot delete default admin',true);return}
+  const users=await getUsers();
+  const u=users[uname];
+  // If member → also remove from team list
+  if(u&&u.memberId){
+    members=members.filter(m=>m.id!==u.memberId);
+    await saveMembers();
+    renderMembers();
+  }
+  delete users[uname];
+  await saveUsers(users);
+  await fbPush('/logs',{ts:Date.now(),type:'removed',actor:me.username,
+    description:`${me.username} deleted account <strong>${esc(u?.displayName||uname)}</strong> (@${esc(uname)})`,target:uname});
+  toast(uname+' deleted');
+  loadAdminUsers();
+}
+
+/* ── Export CSV ── */
+async function exportCSV(){
+  const from=document.getElementById('ex-from').value,to=document.getElementById('ex-to').value;
+  if(!from||!to){toast('Select a date range',true);return}
+  toast('Loading history…');
+  let raw={};
+  try{raw=await fbGet('/logs')||{}}catch{toast('Failed to load history',true);return}
+  const fromTs=new Date(from+'T00:00:00').getTime(),toTs=new Date(to+'T23:59:59').getTime();
+  const events=Object.values(raw).filter(h=>h.ts>=fromTs&&h.ts<=toTs&&(h.type==='online'||h.type==='offline'));
+  if(!events.length){toast('No data in range',true);return}
+  const buckets={};
+  events.forEach(h=>{
+    const d=new Date(h.ts);
+    const key=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:00`;
+    if(!buckets[key])buckets[key]={};
+    if(!buckets[key][h.target])buckets[key][h.target]=[];
+    buckets[key][h.target].push(h);
+  });
+  const names=[...new Set(events.map(h=>h.target))].sort();
+  const rows=[['Hour',...names]];
+  Object.keys(buckets).sort().forEach(hr=>{
+    const row=[hr];
+    names.forEach(n=>{const ev=buckets[hr][n];row.push(ev&&ev.length?ev.sort((a,b)=>b.ts-a.ts)[0].type:'')});
+    rows.push(row);
+  });
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`team-availability-${from}-to-${to}.csv`;a.click();URL.revokeObjectURL(url);
+  toast('CSV downloaded!');
+}
+
+/* ── Polling ── */
+function startPolling(){
+  clearInterval(pollingTimer);
+  pollingTimer=setInterval(async()=>{
+    try{
+      const data=await fbGet('/members');
+      const fresh=data?Object.values(data):[];
+      const hash=JSON.stringify(fresh);
+      if(hash!==lastHash){members=fresh;lastHash=hash;renderMembers()}
+      syncStatus(true);
+    }catch{syncStatus(false)}
+  },5000);
+}
+
+/* ── Init ── */
+function init(){
+  const today=new Date();
+  document.getElementById('today-lbl').textContent=today.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const s=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  document.getElementById('ex-to').value=s(today);
+  document.getElementById('ex-from').value=s(new Date(today-7*86400000));
+  document.getElementById('l-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('l-pass').focus()});
+  document.getElementById('l-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+
+  const savedUrl=localStorage.getItem('team_fb_url');
+  if(savedUrl)DB=savedUrl;
+  else document.getElementById('fb-setup-box').style.display='block';
+
+  const sess=localStorage.getItem('team_session');
+  if(sess&&savedUrl){try{me=JSON.parse(sess);showApp();return}catch{}}
+}
+init();
+</script>
+</body>
+</html>
